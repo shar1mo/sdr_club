@@ -1,0 +1,3 @@
+/home/plutoSDR/kirill_vitalya_sdr/dev/build/CMakeFiles/main.dir
+/home/plutoSDR/kirill_vitalya_sdr/dev/build/CMakeFiles/edit_cache.dir
+/home/plutoSDR/kirill_vitalya_sdr/dev/build/CMakeFiles/rebuild_cache.dir
