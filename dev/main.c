@@ -5,17 +5,64 @@
 #include <stdint.h>
 #include <complex.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <string.h>
 
+typedef struct {
+  size_t *iteration_count;
+  SoapySDRDevice **sdr;
+  SoapySDRStream **rxStream;
+  size_t *rx_mtu;
+  const long  *timeoutUs;
+  long long *last_time;
+  int16_t *rx_buffer;
+} rx_tx_conf_t;
 
-void tx_thread(void* tx_buff) {
+void* rx_thread(void *args) {
+  rx_tx_conf_t* refs = (rx_tx_conf_t*)args;
 
+  FILE *fptr;
+  char *file_name = "../rx_buff.pcm";
+
+  fptr = fopen(file_name, "wb");
+  if(fptr == NULL) {
+    perror("fptr err");
+    return EXIT_FAILURE;
+  }
+
+  
+  for(size_t buffers_read = 0; buffers_read < *(refs->iteration_count); buffers_read++) {
+    void *rx_buffs[] = {refs->rx_buffer};
+    int flags;        // flags set by receive operation
+    long long timeNs; //timestamp for receive buffer
+
+    // считали буффер RX, записали его в rx_buffer
+    int sr = SoapySDRDevice_readStream(*(refs->sdr), *(refs->rxStream), rx_buffs, refs->rx_mtu, &flags, &timeNs, *(refs->timeoutUs));
+
+    fwrite(*(refs->rx_buffer), 2 * *(refs->rx_mtu) * sizeof(int16_t), 1, fptr);
+
+    printf("write done\n");
+
+    // Смотрим на количество считаных сэмплов, времени прихода и разницы во времени с чтением прошлого буфера
+    printf("Buffer: %lu - Samples: %i, Flags: %i, Time: %lli, TimeDiff: %lli\n", buffers_read, sr, flags, timeNs, timeNs - *(refs->last_time));
+    *(refs->last_time) = timeNs;
+  }
+  fclose(fptr);
 }
+
+// void tx_thread(void* args) {
+
+// }
+
 
 
 
 int main(void) {
+  pthread_t rx_tid;
+  // pthread_t tx_tid;
+  pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+  
   SoapySDRKwargs args = {};
   SoapySDRKwargs_set(&args, "driver", "plutosdr");        // Говорим какой Тип устройства 
   if (1) {
@@ -97,15 +144,30 @@ int main(void) {
   const long  timeoutUs = 400000;
   long long last_time = 0;
 
+  rx_tx_conf_t rxtxconf = {
+    .iteration_count = &iteration_count,
+    .sdr = &sdr,
+    .rxStream = &rxStream,
+    .rx_mtu = &rx_mtu,
+    .timeoutUs = &timeoutUs,
+    .last_time = &last_time,
+    .rx_buffer = &rx_buffer
+  };
 
-  FILE *fptr;
-  char *file_name = "../rx_buff.pcm";
-
-  fptr = fopen(file_name, "wb");
-  if(fptr == NULL) {
-    perror("fptr err");
+  if(pthread_create(&rx_tid, NULL, rx_thread, &rxtxconf) != 0) {
+    perror("pthread fail create");
     return EXIT_FAILURE;
   }
+
+
+  // FILE *fptr;
+  // char *file_name = "../rx_buff.pcm";
+
+  // fptr = fopen(file_name, "wb");
+  // if(fptr == NULL) {
+  //   perror("fptr err");
+  //   return EXIT_FAILURE;
+  // }
 
 // Начинается работа с получением и отправкой сэмплов
   for (size_t buffers_read = 0; buffers_read < iteration_count; buffers_read++)
@@ -114,21 +176,17 @@ int main(void) {
     int flags;        // flags set by receive operation
     long long timeNs; //timestamp for receive buffer
     
-    // считали буффер RX, записали его в rx_buffer
-    int sr = SoapySDRDevice_readStream(sdr, rxStream, rx_buffs, rx_mtu, &flags, &timeNs, timeoutUs);
+    // // считали буффер RX, записали его в rx_buffer
+    // int sr = SoapySDRDevice_readStream(sdr, rxStream, rx_buffs, rx_mtu, &flags, &timeNs, timeoutUs);
 
 
-    fwrite(rx_buffer, 2 * rx_mtu * sizeof(int16_t), 1, fptr);
+    // fwrite(rx_buffer, 2 * rx_mtu * sizeof(int16_t), 1, fptr);
 
-    // if (sr > 0) {
-    //   fwrite(rx_buffer, sizeof(int16_t), sr * 2, fptr);
-    // }
+    // printf("write done\n");
 
-    printf("write done\n");
-
-    // Смотрим на количество считаных сэмплов, времени прихода и разницы во времени с чтением прошлого буфера
-    printf("Buffer: %lu - Samples: %i, Flags: %i, Time: %lli, TimeDiff: %lli\n", buffers_read, sr, flags, timeNs, timeNs - last_time);
-    last_time = timeNs;
+    // // Смотрим на количество считаных сэмплов, времени прихода и разницы во времени с чтением прошлого буфера
+    // printf("Buffer: %lu - Samples: %i, Flags: %i, Time: %lli, TimeDiff: %lli\n", buffers_read, sr, flags, timeNs, timeNs - last_time);
+    // last_time = timeNs;
 
     // Переменная для времени отправки сэмплов относительно текущего приема
     long long tx_time = timeNs + (4 * 1000 * 1000); // на 4 [мс] в будущее
@@ -150,7 +208,8 @@ int main(void) {
       }
     //}
   }
-  fclose(fptr);
+
+  pthread_join(rx_thread, NULL);
 
 
   //stop streaming
