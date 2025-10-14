@@ -75,13 +75,40 @@ CMakeFiles/main.dir/main.c.o: ../main.c \
   /usr/include/x86_64-linux-gnu/bits/fcntl-linux.h \
   /usr/include/x86_64-linux-gnu/bits/stat.h \
   /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
-  /usr/include/string.h \
+  /usr/include/pthread.h \
+  /usr/include/sched.h \
+  /usr/include/x86_64-linux-gnu/bits/sched.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h \
+  /usr/include/x86_64-linux-gnu/bits/cpu-set.h \
+  /usr/include/time.h \
+  /usr/include/x86_64-linux-gnu/bits/time.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h \
   /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
   /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
+  /usr/include/x86_64-linux-gnu/bits/setjmp.h \
+  /usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h \
+  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h \
+  /usr/include/x86_64-linux-gnu/bits/pthread_stack_min.h \
+  /usr/include/string.h \
   /usr/include/strings.h
 
 
+/usr/include/x86_64-linux-gnu/bits/setjmp.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/locale_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/time.h:
+
+/usr/include/time.h:
+
+/usr/include/x86_64-linux-gnu/bits/cpu-set.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_sched_param.h:
+
+/usr/include/x86_64-linux-gnu/bits/sched.h:
+
+/usr/include/pthread.h:
 
 /usr/include/x86_64-linux-gnu/bits/struct_stat.h:
 
@@ -113,6 +140,8 @@ CMakeFiles/main.dir/main.c.o: ../main.c \
 
 /usr/include/x86_64-linux-gnu/bits/uintn-identity.h:
 
+/usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h:
+
 /usr/lib/gcc/x86_64-linux-gnu/11/include/stdarg.h:
 
 /usr/include/x86_64-linux-gnu/bits/timesize.h:
@@ -123,11 +152,15 @@ CMakeFiles/main.dir/main.c.o: ../main.c \
 
 /usr/include/x86_64-linux-gnu/bits/stdio_lim.h:
 
+/usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h:
+
 /usr/include/features-time64.h:
 
 /usr/include/features.h:
 
 /usr/local/include/SoapySDR/Types.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct_tm.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/FILE.h:
 
@@ -146,6 +179,8 @@ CMakeFiles/main.dir/main.c.o: ../main.c \
 /usr/include/x86_64-linux-gnu/bits/wordsize.h:
 
 /usr/include/stdlib.h:
+
+/usr/include/sched.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/11/include/stdbool.h:
 
@@ -176,6 +211,8 @@ CMakeFiles/main.dir/main.c.o: ../main.c \
 /usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
 
 /usr/include/stdc-predef.h:
+
+/usr/include/x86_64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/clockid_t.h:
 
@@ -214,6 +251,8 @@ CMakeFiles/main.dir/main.c.o: ../main.c \
 /usr/include/x86_64-linux-gnu/bits/byteswap.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/__sigset_t.h:
+
+/usr/include/x86_64-linux-gnu/bits/pthread_stack_min.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h:
 
