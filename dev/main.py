@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-name = "rx_buff.pcm"
+name = "rx_buff_test.pcm"
 
 data = []
 imag = []
