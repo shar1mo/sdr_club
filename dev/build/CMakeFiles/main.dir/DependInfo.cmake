@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/plutoSDR/kirill_vitalya_sdr/dev/main.c" "CMakeFiles/main.dir/main.c.o" "gcc" "CMakeFiles/main.dir/main.c.o.d"
+  "/home/plutoSDR/kirill_vitalya_sdr/dev/rx_tx_audio.c" "CMakeFiles/main.dir/rx_tx_audio.c.o" "gcc" "CMakeFiles/main.dir/rx_tx_audio.c.o.d"
   )
 
 # Targets to which this target links.

@@ -69,28 +69,28 @@ include CMakeFiles/main.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/main.dir/flags.make
 
-CMakeFiles/main.dir/main.c.o: CMakeFiles/main.dir/flags.make
-CMakeFiles/main.dir/main.c.o: ../main.c
-CMakeFiles/main.dir/main.c.o: CMakeFiles/main.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/plutoSDR/kirill_vitalya_sdr/dev/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/main.dir/main.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/main.dir/main.c.o -MF CMakeFiles/main.dir/main.c.o.d -o CMakeFiles/main.dir/main.c.o -c /home/plutoSDR/kirill_vitalya_sdr/dev/main.c
+CMakeFiles/main.dir/rx_tx_audio.c.o: CMakeFiles/main.dir/flags.make
+CMakeFiles/main.dir/rx_tx_audio.c.o: ../rx_tx_audio.c
+CMakeFiles/main.dir/rx_tx_audio.c.o: CMakeFiles/main.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/plutoSDR/kirill_vitalya_sdr/dev/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/main.dir/rx_tx_audio.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/main.dir/rx_tx_audio.c.o -MF CMakeFiles/main.dir/rx_tx_audio.c.o.d -o CMakeFiles/main.dir/rx_tx_audio.c.o -c /home/plutoSDR/kirill_vitalya_sdr/dev/rx_tx_audio.c
 
-CMakeFiles/main.dir/main.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/main.dir/main.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/plutoSDR/kirill_vitalya_sdr/dev/main.c > CMakeFiles/main.dir/main.c.i
+CMakeFiles/main.dir/rx_tx_audio.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/main.dir/rx_tx_audio.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/plutoSDR/kirill_vitalya_sdr/dev/rx_tx_audio.c > CMakeFiles/main.dir/rx_tx_audio.c.i
 
-CMakeFiles/main.dir/main.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/main.dir/main.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/plutoSDR/kirill_vitalya_sdr/dev/main.c -o CMakeFiles/main.dir/main.c.s
+CMakeFiles/main.dir/rx_tx_audio.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/main.dir/rx_tx_audio.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/plutoSDR/kirill_vitalya_sdr/dev/rx_tx_audio.c -o CMakeFiles/main.dir/rx_tx_audio.c.s
 
 # Object files for target main
 main_OBJECTS = \
-"CMakeFiles/main.dir/main.c.o"
+"CMakeFiles/main.dir/rx_tx_audio.c.o"
 
 # External object files for target main
 main_EXTERNAL_OBJECTS =
 
-main: CMakeFiles/main.dir/main.c.o
+main: CMakeFiles/main.dir/rx_tx_audio.c.o
 main: CMakeFiles/main.dir/build.make
 main: /usr/local/lib/libSoapySDR.so.0.8.1
 main: CMakeFiles/main.dir/link.txt

@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-name = "rx_buff_test.pcm"
+name = "smeshariki_after_rx.pcm"
 
 data = []
 imag = []
@@ -26,18 +26,13 @@ for i in range(len(imag)):
     abs = math.sqrt(imag[i] * imag[i] + real[i] * real[i])
     absIQ.append(abs)
 
-        
-# Инициализируем список для хранения данных
 
-
-# fig, axs = plt.subplots(2, 1, layout='constrained')
 plt.figure(1)
 
-# axs[1].plot(count, np.abs(data),  color='grey')  # Используем scatter для диаграммы созвездия
-plt.plot(count,(imag),'r-')  # Используем scatter для диаграммы созвездия
-plt.plot(count,(real), 'b-')  # Используем scatter для диаграммы созвездия
+plt.plot(count,(imag),'r-')
+plt.plot(count,(real), 'b-')
 plt.show()
 
 plt.figure(2)
-plt.plot(count,(absIQ), 'g-')  # Используем scatter для диаграммы созвездия
+plt.plot(count,(absIQ), 'g-')
 plt.show()  

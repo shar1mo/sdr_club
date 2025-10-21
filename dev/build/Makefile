@@ -129,29 +129,29 @@ main/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
 .PHONY : main/fast
 
-main.o: main.c.o
-.PHONY : main.o
+rx_tx_audio.o: rx_tx_audio.c.o
+.PHONY : rx_tx_audio.o
 
 # target to build an object file
-main.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.c.o
-.PHONY : main.c.o
+rx_tx_audio.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/rx_tx_audio.c.o
+.PHONY : rx_tx_audio.c.o
 
-main.i: main.c.i
-.PHONY : main.i
+rx_tx_audio.i: rx_tx_audio.c.i
+.PHONY : rx_tx_audio.i
 
 # target to preprocess a source file
-main.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.c.i
-.PHONY : main.c.i
+rx_tx_audio.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/rx_tx_audio.c.i
+.PHONY : rx_tx_audio.c.i
 
-main.s: main.c.s
-.PHONY : main.s
+rx_tx_audio.s: rx_tx_audio.c.s
+.PHONY : rx_tx_audio.s
 
 # target to generate assembly for a file
-main.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.c.s
-.PHONY : main.c.s
+rx_tx_audio.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/rx_tx_audio.c.s
+.PHONY : rx_tx_audio.c.s
 
 # Help Target
 help:
@@ -162,9 +162,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... main"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
+	@echo "... rx_tx_audio.o"
+	@echo "... rx_tx_audio.i"
+	@echo "... rx_tx_audio.s"
 .PHONY : help
 
 

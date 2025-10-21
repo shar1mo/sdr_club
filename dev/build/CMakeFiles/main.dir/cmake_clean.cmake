@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/main.dir/main.c.o"
-  "CMakeFiles/main.dir/main.c.o.d"
+  "CMakeFiles/main.dir/rx_tx_audio.c.o"
+  "CMakeFiles/main.dir/rx_tx_audio.c.o.d"
   "main"
   "main.pdb"
 )
