@@ -129,29 +129,29 @@ main/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
 .PHONY : main/fast
 
-rx_tx_audio.o: rx_tx_audio.c.o
-.PHONY : rx_tx_audio.o
+bpsk.o: bpsk.c.o
+.PHONY : bpsk.o
 
 # target to build an object file
-rx_tx_audio.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/rx_tx_audio.c.o
-.PHONY : rx_tx_audio.c.o
+bpsk.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/bpsk.c.o
+.PHONY : bpsk.c.o
 
-rx_tx_audio.i: rx_tx_audio.c.i
-.PHONY : rx_tx_audio.i
+bpsk.i: bpsk.c.i
+.PHONY : bpsk.i
 
 # target to preprocess a source file
-rx_tx_audio.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/rx_tx_audio.c.i
-.PHONY : rx_tx_audio.c.i
+bpsk.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/bpsk.c.i
+.PHONY : bpsk.c.i
 
-rx_tx_audio.s: rx_tx_audio.c.s
-.PHONY : rx_tx_audio.s
+bpsk.s: bpsk.c.s
+.PHONY : bpsk.s
 
 # target to generate assembly for a file
-rx_tx_audio.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/rx_tx_audio.c.s
-.PHONY : rx_tx_audio.c.s
+bpsk.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/bpsk.c.s
+.PHONY : bpsk.c.s
 
 # Help Target
 help:
@@ -162,9 +162,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... main"
-	@echo "... rx_tx_audio.o"
-	@echo "... rx_tx_audio.i"
-	@echo "... rx_tx_audio.s"
+	@echo "... bpsk.o"
+	@echo "... bpsk.i"
+	@echo "... bpsk.s"
 .PHONY : help
 
 

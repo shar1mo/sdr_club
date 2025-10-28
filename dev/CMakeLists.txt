@@ -7,7 +7,7 @@ set(CMAKE_BUILD_TYPE Debug)
 find_package(SoapySDR REQUIRED)
 
 set(MAIN_SOURCE_FILES
-    rx_tx_audio.c
+    bpsk.c
 )
 
 # Добавляем исполняемый файл
