@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-name = "smeshariki_after_rx_inter.pcm"
+name = "symb_after_rx.pcm"
 
 data = []
 imag = []
