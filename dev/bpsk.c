@@ -9,14 +9,13 @@
 #include <string.h>
 
 int *to_bpsk(int *bit_arr, int length) {
-    int *bpsk_arr = (int *)malloc(length * 2 * sizeof(int)); 
+    int *bpsk_arr = (int *)malloc(length * sizeof(int));
     for(int i = 0; i < length; i++) {
         if(bit_arr[i] == 0) {
-            bpsk_arr[i * 2] = 1;
+            bpsk_arr[i] = 1;
         } else {
-            bpsk_arr[i * 2] = -1;
+            bpsk_arr[i] = -1;
         }
-        bpsk_arr[i * 2 + 1] = 0;
     }
     return bpsk_arr;
 }
@@ -26,18 +25,20 @@ int *upsampling(int *bpsk_arr, int length) {
     int *bpsk_after_upsampling = (int *)malloc(length * 10 * sizeof(int));
     
     for(int i = 0; i < length; i++) {
+        if (i > 0) {
+            for(int j = 0; j < 9; j++) {
+                bpsk_after_upsampling[count] = 0;
+                count++;
+            }
+        }
         bpsk_after_upsampling[count] = bpsk_arr[i];
         count++;
-        for(int j = 0; j < 9; j++) {
-            bpsk_after_upsampling[count] = 0;
-            count++;
-        }
     }
     return bpsk_after_upsampling;
 }
 
 int *convolution(int *upsampling_arr, int *impulse_arr, int length, int impulse_length) {
-    int result_length = length + impulse_length - 1;
+    int result_length = length;
     int *upsampl_after_conv = (int *)malloc(result_length * sizeof(int));
     
     for (int i = 0; i < result_length; i++) {
@@ -62,27 +63,27 @@ int main(void) {
     
     int *bpsk_arr = to_bpsk(bit_arr, len_arr);
     printf("BPSK array: ");
-    for(int i = 0; i < len_arr * 2; i++) {
-        printf("%d ", bpsk_arr[i]);
+    for(int i = 0; i < len_arr; i++) {
+    printf("%d ", bpsk_arr[i]);
     }
     printf("\n");
-    
-    int *bpsk_after_arr = upsampling(bpsk_arr, len_arr * 2);
+
+    int *bpsk_after_arr = upsampling(bpsk_arr, len_arr);
     printf("After upsampling: ");
-    for(int i = 0; i < len_arr * 2 * 10; i++) {
-        printf("%d ", bpsk_after_arr[i]);
+    for(int i = 0; i < len_arr * 10; i++) {
+    printf("%d ", bpsk_after_arr[i]);
     }
     printf("\n");
 
     int pulse[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     int pulse_length = 10;
-    
-    int *conv_result = convolution(bpsk_after_arr, pulse, len_arr * 2 * 10, pulse_length);
-    
+
+    int *conv_result = convolution(bpsk_after_arr, pulse, len_arr * 10, pulse_length);
+
     printf("After convolution: ");
-    int conv_length = len_arr * 2 * 10 + pulse_length - 1;
+    int conv_length = len_arr * 10;
     for(int i = 0; i < conv_length; i++) {
-        printf("%d ", conv_result[i]);
+    printf("%d ", conv_result[i]);
     }
     printf("\n");
 
