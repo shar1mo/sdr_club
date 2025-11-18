@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-name = "symb_after_rx.pcm"
+name = "symb_before_send.pcm"
 
 data = []
 imag = []
