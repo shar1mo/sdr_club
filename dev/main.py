@@ -43,7 +43,16 @@ print(filter)
 
 name2 = np.convolve(real, filter)
 
-plt.figure(2)
+output_filename = "real_part_filtered.pcm"
+with open(output_filename, "wb") as f:
+    for value in name2:
+        int_value = int(value)
+        int_value = max(min(int_value, 32767), -32768)
+        f.write(int_value.to_bytes(2, byteorder='little', signed=True))
+
+print(f"Filtered real part saved to {output_filename}")
+
+plt.figure(3)
 plt.plot(name2)
 plt.show()  
 
@@ -54,7 +63,7 @@ if np.any(signal_present):
     start_idx = np.argmax(signal_present)
     end_idx = len(real) - np.argmax(signal_present[::-1])
     
-    real_data = real[2165:3121]
+    real_data = real[2165:3121] #start 2160
     imag_data = imag[start_idx:end_idx]
     
     print(f"Data range: {start_idx} to {end_idx} (total: {end_idx - start_idx} samples)")
@@ -70,3 +79,66 @@ plt.figure(figsize=(8, 8))
 plt.scatter(real_10, real_10, alpha=0.5, s=5)
 plt.title(f'Constellation (every {step}th point)')
 plt.show()
+
+sync_name = "symbol_synchronized.pcm"
+sync_symbols = []
+
+with open(sync_name, "rb") as f:
+    while (byte := f.read(2)):
+        value = int.from_bytes(byte, byteorder='little', signed=True)
+        sync_symbols.append(value)
+
+print(f"Read {len(sync_symbols)} synchronized symbols")
+
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(sync_symbols, 'bo-', markersize=3, alpha=0.7)
+plt.title('Synchronized Symbols (Time Domain)')
+plt.xlabel('Symbol Index')
+plt.ylabel('Amplitude')
+plt.grid(True)
+
+plt.subplot(1, 2, 2)
+plt.scatter(sync_symbols, np.zeros_like(sync_symbols), alpha=0.7, s=30)
+plt.title('Synchronized Constellation')
+plt.xlabel('In-phase')
+plt.ylabel('Quadrature')
+plt.grid(True)
+plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
+
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(8, 4))
+plt.hist(sync_symbols, bins=30, alpha=0.7, edgecolor='black')
+plt.title('Amplitude Distribution of Synchronized Symbols')
+plt.xlabel('Amplitude')
+plt.ylabel('Count')
+plt.grid(True, alpha=0.3)
+plt.show()
+
+
+if len(sync_symbols) > 0:
+    plt.figure(figsize=(10, 6))
+    
+    unsync_symbols = real_data[::10][:len(sync_symbols)]
+    
+    plt.subplot(2, 1, 1)
+    plt.scatter(unsync_symbols, np.zeros_like(unsync_symbols), alpha=0.7, s=30, color='red')
+    plt.title('Constellation WITHOUT Synchronization')
+    plt.xlabel('In-phase')
+    plt.ylabel('Quadrature')
+    plt.grid(True)
+    plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
+    
+    plt.subplot(2, 1, 2)
+    plt.scatter(sync_symbols, np.zeros_like(sync_symbols), alpha=0.7, s=30, color='blue')
+    plt.title('Constellation WITH Synchronization')
+    plt.xlabel('In-phase')
+    plt.ylabel('Quadrature')
+    plt.grid(True)
+    plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
+    
+    plt.tight_layout()
+    plt.show()

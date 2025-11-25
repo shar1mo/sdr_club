@@ -7,6 +7,136 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <string.h>
+#include <math.h>
+
+typedef struct {
+    double K1, K2;
+    double p1, p2;
+    int offset;
+    int N_sps;  // samples per symbol
+} SymbolSync;
+
+void init_symbol_sync(SymbolSync *sync, int samples_per_symbol) {
+    sync->N_sps = samples_per_symbol;
+    sync->p1 = 0.0;
+    sync->p2 = 0.0;
+    sync->offset = 0;
+    
+    double loop_bandwidth = 0.01;
+    double damping_factor = 0.707;
+    double detector_gain = 1.0;
+    
+    double theta = (loop_bandwidth / samples_per_symbol) / (damping_factor + 1.0 / (4.0 * damping_factor));
+    double denominator = 1.0 + 2.0 * damping_factor * theta + theta * theta;
+    
+    sync->K1 = (4.0 * damping_factor * theta) / (denominator * detector_gain);
+    sync->K2 = (4.0 * theta * theta) / (denominator * detector_gain);
+    
+    printf("Symbol sync: K1=%f, K2=%f, N_sps=%d\n", sync->K1, sync->K2, sync->N_sps);
+}
+
+double gardner_ted(const int16_t *samples, int n, int N_sps) {
+    int N_sp = N_sps / 2;
+    
+    int idx_mid = n + N_sp;
+    int idx_prev = n;
+    int idx_next = n + N_sps;
+    
+    double x_mid = samples[idx_mid];
+    double x_prev = samples[idx_prev];
+    double x_next = samples[idx_next];
+    
+    return x_mid * (x_next - x_prev);
+}
+
+void symbol_synchronization(const int16_t *real_samples, int num_samples) {
+    SymbolSync sync;
+    int samples_per_symbol = 10;
+    init_symbol_sync(&sync, samples_per_symbol);
+    
+    int start_index = 0;
+    for(int i = 0; i < num_samples - 100; i++) {
+        if(abs(real_samples[i]) > 1000) {
+            start_index = i;
+            break;
+        }
+    }
+    printf("Signal starts at index: %d\n", start_index);
+    
+    FILE *sync_file = fopen("../symbol_synchronized.pcm", "wb");
+    if (!sync_file) {
+        printf("Error creating sync file\n");
+        return;
+    }
+    
+    int symbol_count = 0;
+    int max_symbols = (num_samples - start_index) / samples_per_symbol;
+    
+    printf("Starting symbol synchronization...\n");
+    
+    for(int symbol_idx = 0; symbol_idx < max_symbols; symbol_idx++) {
+        int base_index = symbol_idx * samples_per_symbol + start_index;
+        
+        if(base_index + sync.N_sps >= num_samples) {
+            break;
+        }
+        
+        double error = gardner_ted(real_samples, base_index, sync.N_sps);
+        
+        sync.p1 = error * sync.K1;
+        sync.p2 = sync.p2 + sync.p1 + error * sync.K2;
+        
+        while(sync.p2 >= 1.0) sync.p2 -= 1.0;
+        while(sync.p2 < 0.0) sync.p2 += 1.0;
+        
+        sync.offset = (int)round(sync.p2 * sync.N_sps);
+        
+        int optimal_index = base_index + sync.offset;
+        
+        if(optimal_index < num_samples) {
+            int16_t symbol_value = real_samples[optimal_index];
+            fwrite(&symbol_value, sizeof(int16_t), 1, sync_file);
+            symbol_count++;
+        }
+        
+        if(symbol_idx < 10) {
+            printf("Symbol %d: error=%f, p2=%f, offset=%d\n", 
+                   symbol_idx, error, sync.p2, sync.offset);
+        }
+    }
+    
+    fclose(sync_file);
+    printf("Symbol synchronization completed: %d symbols saved\n", symbol_count);
+}
+
+void read_and_sync_real_part() {
+    FILE *file = fopen("../real_part_filtered.pcm", "rb");
+    if(!file) {
+        printf("Error opening real_part_filtered.pcm\n");
+        return;
+    }
+    
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    
+    int num_samples = file_size / sizeof(int16_t);
+    int16_t *real_samples = (int16_t*)malloc(file_size);
+    
+    if(fread(real_samples, 1, file_size, file) != file_size) {
+        printf("Error reading file\n");
+        fclose(file);
+        free(real_samples);
+        return;
+    }
+    
+    fclose(file);
+    printf("Read %d samples from real_part_filtered.pcm\n", num_samples);
+    
+    symbol_synchronization(real_samples, num_samples);
+    
+    free(real_samples);
+}
 
 int *to_bpsk(int *bit_arr, int length) {
     int *bpsk_arr = (int *)malloc(length * sizeof(int));
@@ -57,50 +187,38 @@ int *convolution(int *upsampling_arr, int *impulse_arr, int length, int impulse_
 }
 
 int main(void) {
+    printf("Symbol Synchronization\n");
+    read_and_sync_real_part();
+    printf("\n");
+    
+    printf("BPSK Transmission\n");
+    
     int bit_arr[] = {0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,0,0,1,1,0,1,1,0,0,1,0,0,0,1,1,1,0,0,1,0,0,1,1,0,0,0,1,1,0,1,1,0,1,1,0,0,0,1,1,1,0,1,0,1,0,1,1,0,0,0,1,0}; //hellosdrclub
     int len_arr = sizeof(bit_arr) / sizeof(bit_arr[0]);
     printf("Length of bit array: %d\n", len_arr);
     
     int *bpsk_arr = to_bpsk(bit_arr, len_arr);
-    printf("BPSK array: ");
-    for(int i = 0; i < len_arr; i++) {
-    printf("%d ", bpsk_arr[i]);
-    }
-    printf("\n");
 
     int *bpsk_after_arr = upsampling(bpsk_arr, len_arr);
-    printf("After upsampling: ");
-    for(int i = 0; i < len_arr * 10; i++) {
-    printf("%d ", bpsk_after_arr[i]);
-    }
-    printf("\n");
 
     int pulse[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     int pulse_length = 10;
 
     int *conv_result = convolution(bpsk_after_arr, pulse, len_arr * 10, pulse_length);
 
-    printf("After convolution: ");
-    int conv_length = len_arr * 10;
-    for(int i = 0; i < conv_length; i++) {
-    printf("%d ", conv_result[i]);
-    }
-    printf("\n");
-
-
-    int16_t *tx_samples = (int16_t *)malloc(conv_length * 2 * sizeof(int16_t));
+    int16_t *tx_samples = (int16_t *)malloc(len_arr * 10 * 2 * sizeof(int16_t));
     int scale_factor = 1;
     
-    for(int i = 0; i < conv_length; i++) {
+    for(int i = 0; i < len_arr * 10; i++) {
         tx_samples[i * 2] = (int16_t)(conv_result[i] * scale_factor);
         tx_samples[i * 2 + 1] = 0;
     }
     
-    printf("Converted to %d I/Q samples\n", conv_length);
+    printf("Converted to %d I/Q samples\n", len_arr * 10);
 
     FILE *fpt_pcm = fopen("../symb_before_send.pcm", "wb");
     if (fpt_pcm) {
-        fwrite(tx_samples, sizeof(int16_t), conv_length * 2, fpt_pcm);
+        fwrite(tx_samples, sizeof(int16_t), len_arr * 10 * 2, fpt_pcm);
         fclose(fpt_pcm);
         printf("Saved samples to symb_before_send.pcm\n");
     }
@@ -184,6 +302,7 @@ int main(void) {
         printf("Got timestamp for sync: %lld\n", timeNs);
     }
 
+    int conv_length = len_arr * 10;
     while (total_samples_sent < conv_length) {
         int samples_to_send = (conv_length - total_samples_sent < tx_mtu) ? 
                              (conv_length - total_samples_sent) : tx_mtu;
