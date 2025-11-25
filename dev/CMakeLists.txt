@@ -14,4 +14,4 @@ set(MAIN_SOURCE_FILES
 add_executable(main ${MAIN_SOURCE_FILES})
 
 # Линкуем библиотеки к исполняемому файлу
-target_link_libraries(main ${SoapySDR_LIBRARIES})
+target_link_libraries(main ${SoapySDR_LIBRARIES} m)

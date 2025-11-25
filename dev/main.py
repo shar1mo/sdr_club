@@ -110,14 +110,6 @@ plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
 plt.tight_layout()
 plt.show()
 
-plt.figure(figsize=(8, 4))
-plt.hist(sync_symbols, bins=30, alpha=0.7, edgecolor='black')
-plt.title('Amplitude Distribution of Synchronized Symbols')
-plt.xlabel('Amplitude')
-plt.ylabel('Count')
-plt.grid(True, alpha=0.3)
-plt.show()
-
 
 if len(sync_symbols) > 0:
     plt.figure(figsize=(10, 6))

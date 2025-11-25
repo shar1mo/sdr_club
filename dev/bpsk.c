@@ -17,14 +17,14 @@ typedef struct {
 } SymbolSync;
 
 void init_symbol_sync(SymbolSync *sync, int samples_per_symbol) {
-    sync->N_sps = samples_per_symbol;
+    sync->N_sps = 10;
     sync->p1 = 0.0;
     sync->p2 = 0.0;
     sync->offset = 0;
     
-    double loop_bandwidth = 0.01;
-    double damping_factor = 0.707;
-    double detector_gain = 1.0;
+    double loop_bandwidth = 0.01; //BnTs
+    double damping_factor = sqrt(2)/2; //zeta
+    double detector_gain = 0.0002; //Kp
     
     double theta = (loop_bandwidth / samples_per_symbol) / (damping_factor + 1.0 / (4.0 * damping_factor));
     double denominator = 1.0 + 2.0 * damping_factor * theta + theta * theta;
@@ -46,6 +46,13 @@ double gardner_ted(const int16_t *samples, int n, int N_sps) {
     double x_prev = samples[idx_prev];
     double x_next = samples[idx_next];
     
+    double scale = 1000.0;
+    double error = (x_mid / scale) * ((x_next - x_prev) / scale);
+    
+    if (error > 1.0) error = 1.0;
+    if (error < -1.0) error = -1.0;
+    
+    return error;
     return x_mid * (x_next - x_prev);
 }
 
@@ -74,6 +81,11 @@ void symbol_synchronization(const int16_t *real_samples, int num_samples) {
     
     printf("Starting symbol synchronization...\n");
     
+
+    double final_error = 0.0;
+    int final_offset = 0;
+    double final_p2 = 0.0;
+    
     for(int symbol_idx = 0; symbol_idx < max_symbols; symbol_idx++) {
         int base_index = symbol_idx * samples_per_symbol + start_index;
         
@@ -99,7 +111,11 @@ void symbol_synchronization(const int16_t *real_samples, int num_samples) {
             symbol_count++;
         }
         
-        if(symbol_idx < 10) {
+        final_error = error;
+        final_p2 = sync.p2;
+        final_offset = sync.offset;
+        
+        if(symbol_idx < 15) {
             printf("Symbol %d: error=%f, p2=%f, offset=%d\n", 
                    symbol_idx, error, sync.p2, sync.offset);
         }
@@ -107,6 +123,12 @@ void symbol_synchronization(const int16_t *real_samples, int num_samples) {
     
     fclose(sync_file);
     printf("Symbol synchronization completed: %d symbols saved\n", symbol_count);
+    
+    printf("Final synchronization values:\n");
+    printf("  Final error: %f\n", final_error);
+    printf("  Final p2: %f\n", final_p2);
+    printf("  Final offset: %d\n", final_offset);
+    printf("  Final loop filter state: p1=%f, p2=%f\n", sync.p1, sync.p2);
 }
 
 void read_and_sync_real_part() {
@@ -187,29 +209,47 @@ int *convolution(int *upsampling_arr, int *impulse_arr, int length, int impulse_
 }
 
 int main(void) {
+
     printf("Symbol Synchronization\n");
     read_and_sync_real_part();
     printf("\n");
     
     printf("BPSK Transmission\n");
-    
     int bit_arr[] = {0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,0,0,1,1,0,1,1,0,0,1,0,0,0,1,1,1,0,0,1,0,0,1,1,0,0,0,1,1,0,1,1,0,1,1,0,0,0,1,1,1,0,1,0,1,0,1,1,0,0,0,1,0}; //hellosdrclub
     int len_arr = sizeof(bit_arr) / sizeof(bit_arr[0]);
     printf("Length of bit array: %d\n", len_arr);
     
     int *bpsk_arr = to_bpsk(bit_arr, len_arr);
+    printf("BPSK array: ");
+    for(int i = 0; i < len_arr; i++) {
+    printf("%d ", bpsk_arr[i]);
+    }
+    printf("\n");
 
     int *bpsk_after_arr = upsampling(bpsk_arr, len_arr);
+    printf("After upsampling: ");
+    for(int i = 0; i < len_arr * 10; i++) {
+    printf("%d ", bpsk_after_arr[i]);
+    }
+    printf("\n");
 
     int pulse[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     int pulse_length = 10;
 
     int *conv_result = convolution(bpsk_after_arr, pulse, len_arr * 10, pulse_length);
 
-    int16_t *tx_samples = (int16_t *)malloc(len_arr * 10 * 2 * sizeof(int16_t));
+    printf("After convolution: ");
+    int conv_length = len_arr * 10;
+    for(int i = 0; i < conv_length; i++) {
+    printf("%d ", conv_result[i]);
+    }
+    printf("\n");
+
+
+    int16_t *tx_samples = (int16_t *)malloc(conv_length * 2 * sizeof(int16_t));
     int scale_factor = 1;
     
-    for(int i = 0; i < len_arr * 10; i++) {
+    for(int i = 0; i < conv_length; i++) {
         tx_samples[i * 2] = (int16_t)(conv_result[i] * scale_factor);
         tx_samples[i * 2 + 1] = 0;
     }
@@ -302,7 +342,6 @@ int main(void) {
         printf("Got timestamp for sync: %lld\n", timeNs);
     }
 
-    int conv_length = len_arr * 10;
     while (total_samples_sent < conv_length) {
         int samples_to_send = (conv_length - total_samples_sent < tx_mtu) ? 
                              (conv_length - total_samples_sent) : tx_mtu;
