@@ -109,28 +109,3 @@ plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
 
 plt.tight_layout()
 plt.show()
-
-
-if len(sync_symbols) > 0:
-    plt.figure(figsize=(10, 6))
-    
-    unsync_symbols = real_data[::10][:len(sync_symbols)]
-    
-    plt.subplot(2, 1, 1)
-    plt.scatter(unsync_symbols, np.zeros_like(unsync_symbols), alpha=0.7, s=30, color='red')
-    plt.title('Constellation WITHOUT Synchronization')
-    plt.xlabel('In-phase')
-    plt.ylabel('Quadrature')
-    plt.grid(True)
-    plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
-    
-    plt.subplot(2, 1, 2)
-    plt.scatter(sync_symbols, np.zeros_like(sync_symbols), alpha=0.7, s=30, color='blue')
-    plt.title('Constellation WITH Synchronization')
-    plt.xlabel('In-phase')
-    plt.ylabel('Quadrature')
-    plt.grid(True)
-    plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
-    
-    plt.tight_layout()
-    plt.show()

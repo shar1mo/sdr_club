@@ -9,157 +9,6 @@
 #include <string.h>
 #include <math.h>
 
-typedef struct {
-    double K1, K2;
-    double p1, p2;
-    int offset;
-    int N_sps;  // samples per symbol
-} SymbolSync;
-
-void init_symbol_sync(SymbolSync *sync, int samples_per_symbol) {
-    sync->N_sps = 10;
-    sync->p1 = 0.0;
-    sync->p2 = 0.0;
-    sync->offset = 0;
-    
-    double loop_bandwidth = 0.01; //BnTs
-    double damping_factor = sqrt(2)/2; //zeta
-    double detector_gain = 0.0002; //Kp
-    
-    double theta = (loop_bandwidth / samples_per_symbol) / (damping_factor + 1.0 / (4.0 * damping_factor));
-    double denominator = 1.0 + 2.0 * damping_factor * theta + theta * theta;
-    
-    sync->K1 = (4.0 * damping_factor * theta) / (denominator * detector_gain);
-    sync->K2 = (4.0 * theta * theta) / (denominator * detector_gain);
-    
-    printf("Symbol sync: K1=%f, K2=%f, N_sps=%d\n", sync->K1, sync->K2, sync->N_sps);
-}
-
-double gardner_ted(const int16_t *samples, int n, int N_sps) {
-    int N_sp = N_sps / 2;
-    
-    int idx_mid = n + N_sp;
-    int idx_prev = n;
-    int idx_next = n + N_sps;
-    
-    double x_mid = samples[idx_mid];
-    double x_prev = samples[idx_prev];
-    double x_next = samples[idx_next];
-    
-    double scale = 1000.0;
-    double error = (x_mid / scale) * ((x_next - x_prev) / scale);
-    
-    if (error > 1.0) error = 1.0;
-    if (error < -1.0) error = -1.0;
-    
-    return error;
-    return x_mid * (x_next - x_prev);
-}
-
-void symbol_synchronization(const int16_t *real_samples, int num_samples) {
-    SymbolSync sync;
-    int samples_per_symbol = 10;
-    init_symbol_sync(&sync, samples_per_symbol);
-    
-    int start_index = 0;
-    for(int i = 0; i < num_samples - 100; i++) {
-        if(abs(real_samples[i]) > 1000) {
-            start_index = i;
-            break;
-        }
-    }
-    printf("Signal starts at index: %d\n", start_index);
-    
-    FILE *sync_file = fopen("../symbol_synchronized.pcm", "wb");
-    if (!sync_file) {
-        printf("Error creating sync file\n");
-        return;
-    }
-    
-    int symbol_count = 0;
-    int max_symbols = (num_samples - start_index) / samples_per_symbol;
-    
-    printf("Starting symbol synchronization...\n");
-    
-
-    double final_error = 0.0;
-    int final_offset = 0;
-    double final_p2 = 0.0;
-    
-    for(int symbol_idx = 0; symbol_idx < max_symbols; symbol_idx++) {
-        int base_index = symbol_idx * samples_per_symbol + start_index;
-        
-        if(base_index + sync.N_sps >= num_samples) {
-            break;
-        }
-        
-        double error = gardner_ted(real_samples, base_index, sync.N_sps);
-        
-        sync.p1 = error * sync.K1;
-        sync.p2 = sync.p2 + sync.p1 + error * sync.K2;
-        
-        while(sync.p2 >= 1.0) sync.p2 -= 1.0;
-        while(sync.p2 < 0.0) sync.p2 += 1.0;
-        
-        sync.offset = (int)round(sync.p2 * sync.N_sps);
-        
-        int optimal_index = base_index + sync.offset;
-        
-        if(optimal_index < num_samples) {
-            int16_t symbol_value = real_samples[optimal_index];
-            fwrite(&symbol_value, sizeof(int16_t), 1, sync_file);
-            symbol_count++;
-        }
-        
-        final_error = error;
-        final_p2 = sync.p2;
-        final_offset = sync.offset;
-        
-        if(symbol_idx < 15) {
-            printf("Symbol %d: error=%f, p2=%f, offset=%d\n", 
-                   symbol_idx, error, sync.p2, sync.offset);
-        }
-    }
-    
-    fclose(sync_file);
-    printf("Symbol synchronization completed: %d symbols saved\n", symbol_count);
-    
-    printf("Final synchronization values:\n");
-    printf("  Final error: %f\n", final_error);
-    printf("  Final p2: %f\n", final_p2);
-    printf("  Final offset: %d\n", final_offset);
-    printf("  Final loop filter state: p1=%f, p2=%f\n", sync.p1, sync.p2);
-}
-
-void read_and_sync_real_part() {
-    FILE *file = fopen("../real_part_filtered.pcm", "rb");
-    if(!file) {
-        printf("Error opening real_part_filtered.pcm\n");
-        return;
-    }
-    
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    
-    int num_samples = file_size / sizeof(int16_t);
-    int16_t *real_samples = (int16_t*)malloc(file_size);
-    
-    if(fread(real_samples, 1, file_size, file) != file_size) {
-        printf("Error reading file\n");
-        fclose(file);
-        free(real_samples);
-        return;
-    }
-    
-    fclose(file);
-    printf("Read %d samples from real_part_filtered.pcm\n", num_samples);
-    
-    symbol_synchronization(real_samples, num_samples);
-    
-    free(real_samples);
-}
-
 int *to_bpsk(int *bit_arr, int length) {
     int *bpsk_arr = (int *)malloc(length * sizeof(int));
     for(int i = 0; i < length; i++) {
@@ -208,13 +57,19 @@ int *convolution(int *upsampling_arr, int *impulse_arr, int length, int impulse_
     return upsampl_after_conv;
 }
 
-int main(void) {
-
-    printf("Symbol Synchronization\n");
-    read_and_sync_real_part();
-    printf("\n");
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        printf("Usage: %s <tx_uri> <rx_uri>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    
+    char *tx_uri = argv[1];
+    char *rx_uri = argv[2];
     
     printf("BPSK Transmission\n");
+    printf("TX URI: %s\n", tx_uri);
+    printf("RX URI: %s\n", rx_uri);
+    
     int bit_arr[] = {0,1,1,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,0,1,1,0,0,0,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,1,1,1,0,0,1,1,0,1,1,0,0,1,0,0,0,1,1,1,0,0,1,0,0,1,1,0,0,0,1,1,0,1,1,0,1,1,0,0,0,1,1,1,0,1,0,1,0,1,1,0,0,0,1,0}; //hellosdrclub
     int len_arr = sizeof(bit_arr) / sizeof(bit_arr[0]);
     printf("Length of bit array: %d\n", len_arr);
@@ -222,14 +77,14 @@ int main(void) {
     int *bpsk_arr = to_bpsk(bit_arr, len_arr);
     printf("BPSK array: ");
     for(int i = 0; i < len_arr; i++) {
-    printf("%d ", bpsk_arr[i]);
+        printf("%d ", bpsk_arr[i]);
     }
     printf("\n");
 
     int *bpsk_after_arr = upsampling(bpsk_arr, len_arr);
     printf("After upsampling: ");
     for(int i = 0; i < len_arr * 10; i++) {
-    printf("%d ", bpsk_after_arr[i]);
+        printf("%d ", bpsk_after_arr[i]);
     }
     printf("\n");
 
@@ -241,10 +96,9 @@ int main(void) {
     printf("After convolution: ");
     int conv_length = len_arr * 10;
     for(int i = 0; i < conv_length; i++) {
-    printf("%d ", conv_result[i]);
+        printf("%d ", conv_result[i]);
     }
     printf("\n");
-
 
     int16_t *tx_samples = (int16_t *)malloc(conv_length * 2 * sizeof(int16_t));
     int scale_factor = 1;
@@ -263,55 +117,83 @@ int main(void) {
         printf("Saved samples to symb_before_send.pcm\n");
     }
 
-    SoapySDRKwargs args = {};
-    SoapySDRKwargs_set(&args, "driver", "plutosdr"); 
-    if (1) {
-        SoapySDRKwargs_set(&args, "uri", "usb:"); 
-    } else {
-        SoapySDRKwargs_set(&args, "uri", "ip:192.168.2.1");
-    }
-    SoapySDRKwargs_set(&args, "direct", "1");
-    SoapySDRKwargs_set(&args, "timestamp_every", "1920");
-    SoapySDRDevice *sdr = SoapySDRDevice_make(&args);
-    SoapySDRKwargs_clear(&args);
+    // Инициализация TX устройства
+    SoapySDRKwargs tx_args = {};
+    SoapySDRKwargs_set(&tx_args, "driver", "plutosdr"); 
+    SoapySDRKwargs_set(&tx_args, "uri", tx_uri);
+    SoapySDRKwargs_set(&tx_args, "direct", "1");
+    SoapySDRKwargs_set(&tx_args, "timestamp_every", "1920");
+    
+    SoapySDRDevice *tx_sdr = SoapySDRDevice_make(&tx_args);
+    SoapySDRKwargs_clear(&tx_args);
 
-    if (sdr == NULL) {
-        printf("Failed to create SDR device\n");
+    if (tx_sdr == NULL) {
+        printf("Failed to create TX SDR device\n");
+        return EXIT_FAILURE;
+    }
+
+    // Инициализация RX устройства
+    SoapySDRKwargs rx_args = {};
+    SoapySDRKwargs_set(&rx_args, "driver", "plutosdr"); 
+    SoapySDRKwargs_set(&rx_args, "uri", rx_uri);
+    SoapySDRKwargs_set(&rx_args, "direct", "1");
+    SoapySDRKwargs_set(&rx_args, "timestamp_every", "1920");
+    
+    SoapySDRDevice *rx_sdr = SoapySDRDevice_make(&rx_args);
+    SoapySDRKwargs_clear(&rx_args);
+
+    if (rx_sdr == NULL) {
+        printf("Failed to create RX SDR device\n");
+        SoapySDRDevice_unmake(tx_sdr);
         return EXIT_FAILURE;
     }
 
     int sample_rate = 1e6;
     int carrier_freq = 800e6;
 
-    // Параметры RX части
-    SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, sample_rate);
-    SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, carrier_freq, NULL);
+    // Настройка TX устройства
+    SoapySDRDevice_setSampleRate(tx_sdr, SOAPY_SDR_TX, 0, sample_rate);
+    SoapySDRDevice_setFrequency(tx_sdr, SOAPY_SDR_TX, 0, carrier_freq, NULL);
 
-    // Параметры TX части
-    SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, sample_rate);
-    SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, carrier_freq, NULL);
+    // Настройка RX устройства
+    SoapySDRDevice_setSampleRate(rx_sdr, SOAPY_SDR_RX, 0, sample_rate);
+    SoapySDRDevice_setFrequency(rx_sdr, SOAPY_SDR_RX, 0, carrier_freq, NULL);
 
     // Инициализация количества каналов
     size_t channels[] = {0};
     
     // Настройки усилителей
-    SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels, 25.0);
-    SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, channels, -30.0);
+    SoapySDRDevice_setGain(tx_sdr, SOAPY_SDR_TX, channels, -30.0);
+    SoapySDRDevice_setGain(rx_sdr, SOAPY_SDR_RX, channels, 25.0);
 
     const size_t channel_count = 1;
     
     // Формирование потоков
-    SoapySDRStream *rxStream = SoapySDRDevice_setupStream(sdr, SOAPY_SDR_RX, SOAPY_SDR_CS16, channels, channel_count, NULL);
-    SoapySDRStream *txStream = SoapySDRDevice_setupStream(sdr, SOAPY_SDR_TX, SOAPY_SDR_CS16, channels, channel_count, NULL);
+    SoapySDRStream *txStream = SoapySDRDevice_setupStream(tx_sdr, SOAPY_SDR_TX, SOAPY_SDR_CS16, channels, channel_count, NULL);
+    SoapySDRStream *rxStream = SoapySDRDevice_setupStream(rx_sdr, SOAPY_SDR_RX, SOAPY_SDR_CS16, channels, channel_count, NULL);
 
-    SoapySDRDevice_activateStream(sdr, rxStream, 0, 0, 0);
-    SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0);
+    if (txStream == NULL) {
+        printf("Failed to setup TX stream\n");
+        SoapySDRDevice_unmake(tx_sdr);
+        SoapySDRDevice_unmake(rx_sdr);
+        return EXIT_FAILURE;
+    }
+
+    if (rxStream == NULL) {
+        printf("Failed to setup RX stream\n");
+        SoapySDRDevice_unmake(tx_sdr);
+        SoapySDRDevice_unmake(rx_sdr);
+        return EXIT_FAILURE;
+    }
+
+    SoapySDRDevice_activateStream(tx_sdr, txStream, 0, 0, 0);
+    SoapySDRDevice_activateStream(rx_sdr, rxStream, 0, 0, 0);
 
     // Получение MTU
-    size_t rx_mtu = SoapySDRDevice_getStreamMTU(sdr, rxStream);
-    size_t tx_mtu = SoapySDRDevice_getStreamMTU(sdr, txStream);
+    size_t tx_mtu = SoapySDRDevice_getStreamMTU(tx_sdr, txStream);
+    size_t rx_mtu = SoapySDRDevice_getStreamMTU(rx_sdr, rxStream);
 
-    printf("RX MTU: %zu, TX MTU: %zu\n", rx_mtu, tx_mtu);
+    printf("TX MTU: %zu, RX MTU: %zu\n", tx_mtu, rx_mtu);
 
     int16_t *tx_buff = (int16_t*)malloc(2 * tx_mtu * sizeof(int16_t));
     int16_t *rx_buffer = (int16_t*)malloc(2 * rx_mtu * sizeof(int16_t));
@@ -320,6 +202,14 @@ int main(void) {
     FILE *fptr = fopen("../symb_after_rx.pcm", "wb");
     if(fptr == NULL) {
         perror("fptr err");
+        free(tx_buff);
+        free(rx_buffer);
+        free(tx_samples);
+        free(bpsk_arr);
+        free(bpsk_after_arr);
+        free(conv_result);
+        SoapySDRDevice_unmake(tx_sdr);
+        SoapySDRDevice_unmake(rx_sdr);
         return EXIT_FAILURE;
     }
 
@@ -331,12 +221,10 @@ int main(void) {
     long long tx_time = 0;
 
     printf("Starting transmission...\n");
-
-    // Сначала получаем временную метку для синхронизации
     void *rx_buffs[] = {rx_buffer};
     int rx_flags;
     long long timeNs;
-    int sr = SoapySDRDevice_readStream(sdr, rxStream, rx_buffs, rx_mtu, &rx_flags, &timeNs, timeoutUs);
+    int sr = SoapySDRDevice_readStream(rx_sdr, rxStream, rx_buffs, rx_mtu, &rx_flags, &timeNs, timeoutUs);
     if (sr > 0) {
         tx_time = timeNs + (4 * 1000 * 1000); // на 4 мс в будущее
         printf("Got timestamp for sync: %lld\n", timeNs);
@@ -356,7 +244,7 @@ int main(void) {
         }
 
         void *tx_buffs[] = {tx_buff};
-        int st = SoapySDRDevice_writeStream(sdr, txStream, (const void * const*)tx_buffs, tx_mtu, &flags, tx_time, timeoutUs);
+        int st = SoapySDRDevice_writeStream(tx_sdr, txStream, (const void * const*)tx_buffs, tx_mtu, &flags, tx_time, timeoutUs);
         
         if (st < 0) {
             printf("TX Failed: %i\n", st);
@@ -378,7 +266,7 @@ int main(void) {
         int flags;
         long long timeNs;
         
-        int sr = SoapySDRDevice_readStream(sdr, rxStream, rx_buffs, rx_mtu, &flags, &timeNs, timeoutUs);
+        int sr = SoapySDRDevice_readStream(rx_sdr, rxStream, rx_buffs, rx_mtu, &flags, &timeNs, timeoutUs);
 
         if (sr > 0) {
             fwrite(rx_buffer, sr * 2 * sizeof(int16_t), 1, fptr);
@@ -398,11 +286,12 @@ int main(void) {
     free(bpsk_after_arr);
     free(conv_result);
 
-    SoapySDRDevice_deactivateStream(sdr, rxStream, 0, 0);
-    SoapySDRDevice_deactivateStream(sdr, txStream, 0, 0);
-    SoapySDRDevice_closeStream(sdr, rxStream);
-    SoapySDRDevice_closeStream(sdr, txStream);
-    SoapySDRDevice_unmake(sdr);
+    SoapySDRDevice_deactivateStream(tx_sdr, txStream, 0, 0);
+    SoapySDRDevice_deactivateStream(rx_sdr, rxStream, 0, 0);
+    SoapySDRDevice_closeStream(tx_sdr, txStream);
+    SoapySDRDevice_closeStream(rx_sdr, rxStream);
+    SoapySDRDevice_unmake(tx_sdr);
+    SoapySDRDevice_unmake(rx_sdr);
 
     return EXIT_SUCCESS;
 }
