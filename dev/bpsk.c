@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
     char *tx_uri = argv[1];
     char *rx_uri = argv[2];
     
-    printf("BPSK Transmission\n");
+    printf("BPSK Transmission (50 repetitions)\n");
     printf("TX URI: %s\n", tx_uri);
     printf("RX URI: %s\n", rx_uri);
     
@@ -100,19 +100,27 @@ int main(int argc, char* argv[]) {
     }
     printf("\n");
 
-    int16_t *tx_samples = (int16_t *)malloc(conv_length * 2 * sizeof(int16_t));
+    // Повторяем сообщение 50 раз
+    int repeat_count = 50;
+    int total_samples = conv_length * repeat_count;
+    int16_t *tx_samples = (int16_t *)malloc(total_samples * 2 * sizeof(int16_t));
     int scale_factor = 1;
     
-    for(int i = 0; i < conv_length; i++) {
-        tx_samples[i * 2] = (int16_t)(conv_result[i] * scale_factor);
-        tx_samples[i * 2 + 1] = 0;
+    printf("Creating %d repeated messages (total %d samples)\n", repeat_count, total_samples);
+    
+    for(int rep = 0; rep < repeat_count; rep++) {
+        for(int i = 0; i < conv_length; i++) {
+            int idx = rep * conv_length + i;
+            tx_samples[idx * 2] = (int16_t)(conv_result[i] * scale_factor);
+            tx_samples[idx * 2 + 1] = 0;
+        }
     }
     
-    printf("Converted to %d I/Q samples\n", len_arr * 10);
+    printf("Converted to %d I/Q samples (50 repetitions)\n", total_samples);
 
     FILE *fpt_pcm = fopen("../symb_before_send.pcm", "wb");
     if (fpt_pcm) {
-        fwrite(tx_samples, sizeof(int16_t), len_arr * 10 * 2, fpt_pcm);
+        fwrite(tx_samples, sizeof(int16_t), total_samples * 2, fpt_pcm);
         fclose(fpt_pcm);
         printf("Saved samples to symb_before_send.pcm\n");
     }
@@ -230,9 +238,9 @@ int main(int argc, char* argv[]) {
         printf("Got timestamp for sync: %lld\n", timeNs);
     }
 
-    while (total_samples_sent < conv_length) {
-        int samples_to_send = (conv_length - total_samples_sent < tx_mtu) ? 
-                             (conv_length - total_samples_sent) : tx_mtu;
+    while (total_samples_sent < total_samples) {
+        int samples_to_send = (total_samples - total_samples_sent < tx_mtu) ? 
+                             (total_samples - total_samples_sent) : tx_mtu;
 
         // Копируем сэмплы в tx_buff
         for (int i = 0; i < samples_to_send * 2; i++) {
@@ -254,13 +262,15 @@ int main(int argc, char* argv[]) {
         total_samples_sent += samples_to_send;
         tx_time += (samples_to_send * 1000000000LL) / sample_rate;
         
-        printf("Sent %d samples, total: %d/%d\n", samples_to_send, total_samples_sent, conv_length);
+        printf("Sent %d samples, total: %d/%d (%.1f%%)\n", 
+               samples_to_send, total_samples_sent, total_samples,
+               (float)total_samples_sent / total_samples * 100.0);
     }
 
     printf("Transmission completed. Total samples sent: %d\n", total_samples_sent);
 
     printf("Starting reception...\n");
-    size_t iteration_count = 10;
+    size_t iteration_count = 50;
     for (size_t buffers_read = 0; buffers_read < iteration_count; buffers_read++) {
         void *rx_buffs[] = {rx_buffer};
         int flags;

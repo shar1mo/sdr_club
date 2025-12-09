@@ -54,7 +54,7 @@ def main():
     offsets = np.arange(-Nsps//2, Nsps//2 + 1)
     ted_values = []
     
-    n = Nsps * 10
+    n = Nsps * 480
     
     for offset in offsets:
         e = gardner_ted(conv_real, conv_imag, n, Nsps, offset)
@@ -70,7 +70,7 @@ def main():
     p1_accum = 0
     p2_accum = 0
     
-    num_symbols = min(100, (len(conv_real) - 3*Nsps) // Nsps)
+    num_symbols = 4800
     symbol_indices = []
     shift_history = []
     e_values = []
@@ -102,7 +102,7 @@ def main():
         symbol_index = current_index + shift
         symbol_indices.append(symbol_index)
         
-        if k < 100:
+        if k < 4800:
             print(f"  Символ {k}: e={e:10.8f}, p2={p2_accum:8.6f}, shift={shift}, index={symbol_index}")
         
         current_index = symbol_index + Nsps
