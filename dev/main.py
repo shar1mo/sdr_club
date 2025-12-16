@@ -26,14 +26,25 @@ for i in range(len(imag)):
     abs = math.sqrt(imag[i] * imag[i] + real[i] * real[i])
     absIQ.append(abs)
 
+# ГРАФИК 1: Все точки I/Q
+plt.figure(1, figsize=(10, 10))
+plt.scatter(real, imag, alpha=0.5, s=1, c='blue')
+plt.title('Все точки I/Q')
+plt.xlabel('I компонента')
+plt.ylabel('Q компонента')
+plt.grid(True, alpha=0.3)
+plt.axhline(y=0, color='r', linestyle='-', alpha=0.5)
+plt.axvline(x=0, color='r', linestyle='-', alpha=0.5)
+plt.axis('equal')
+plt.show()
 
-plt.figure(1)
+plt.figure(2)
 
 plt.plot(count,(imag),'r-')
 plt.plot(count,(real), 'b-')
 plt.show()
 
-plt.figure(2)
+plt.figure(3)
 plt.plot(count,(absIQ), 'g-')
 plt.show()  
 
@@ -43,7 +54,7 @@ print(filter)
 
 name2 = np.convolve(real, filter)
 
-output_filename = "real_part    _filtered.pcm"
+output_filename = "real_part_filtered.pcm"
 with open(output_filename, "wb") as f:
     for value in name2:
         int_value = int(value)
@@ -52,7 +63,7 @@ with open(output_filename, "wb") as f:
 
 print(f"Filtered real part saved to {output_filename}")
 
-plt.figure(3)
+plt.figure(4)
 plt.plot(name2)
 plt.show()  
 
@@ -63,7 +74,7 @@ if np.any(signal_present):
     start_idx = np.argmax(signal_present)
     end_idx = len(real) - np.argmax(signal_present[::-1])
     
-    real_data = real[2165:3121] #start 2160
+    real_data = real[2165:50161] #start 2160
     imag_data = imag[start_idx:end_idx]
     
     print(f"Data range: {start_idx} to {end_idx} (total: {end_idx - start_idx} samples)")
@@ -75,12 +86,12 @@ else:
 step = 10
 real_10 = real_data[::step]
 
-plt.figure(figsize=(8, 8))
+plt.figure(5, figsize=(8, 8))
 plt.scatter(real_10, real_10, alpha=0.5, s=5)
 plt.title(f'Constellation (every {step}th point)')
 plt.show()
 
-sync_name = "symbol_synchronized.pcm"
+sync_name = "symb_after_rx.pcm"
 sync_symbols = []
 
 with open(sync_name, "rb") as f:
@@ -89,23 +100,3 @@ with open(sync_name, "rb") as f:
         sync_symbols.append(value)
 
 print(f"Read {len(sync_symbols)} synchronized symbols")
-
-plt.figure(figsize=(12, 5))
-
-plt.subplot(1, 2, 1)
-plt.plot(sync_symbols, 'bo-', markersize=3, alpha=0.7)
-plt.title('Synchronized Symbols (Time Domain)')
-plt.xlabel('Symbol Index')
-plt.ylabel('Amplitude')
-plt.grid(True)
-
-plt.subplot(1, 2, 2)
-plt.scatter(sync_symbols, np.zeros_like(sync_symbols), alpha=0.7, s=30)
-plt.title('Synchronized Constellation')
-plt.xlabel('In-phase')
-plt.ylabel('Quadrature')
-plt.grid(True)
-plt.axvline(x=0, color='r', linestyle='--', alpha=0.5)
-
-plt.tight_layout()
-plt.show()

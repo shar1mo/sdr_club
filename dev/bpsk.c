@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
     
     // Настройки усилителей
     SoapySDRDevice_setGain(tx_sdr, SOAPY_SDR_TX, channels, -30.0);
-    SoapySDRDevice_setGain(rx_sdr, SOAPY_SDR_RX, channels, 25.0);
+    SoapySDRDevice_setGain(rx_sdr, SOAPY_SDR_RX, channels, 20.0);
 
     const size_t channel_count = 1;
     
