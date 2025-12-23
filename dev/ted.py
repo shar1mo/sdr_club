@@ -22,18 +22,28 @@ def main():
     filename = sys.argv[1]
     
     rx = np.fromfile(filename, dtype=np.int16)
-    real = rx[0::2]  # I
-    imag = rx[1::2]  # Q
+    
+    real = rx[0::2].astype(float)  # I
+    imag = rx[1::2].astype(float)  # Q
     
     start = 0
-    end = 48010
+    end = 48020
     if len(real) > end:
         real = real[start:end]
         imag = imag[start:end]
     
+
+    Nsps = 10
+
+    h = np.ones(Nsps)
+    conv_real = np.convolve(real, h, mode='same')
+    conv_imag = np.convolve(imag, h, mode='same')
+
+    conv_real = conv_real / np.max(np.abs(conv_real))
+    conv_imag = conv_imag / np.max(np.abs(conv_imag))
+
     p1, p2 = 0, 0
     BnTs = 0.01
-    Nsps = 10
     Kp = 0.002
     zeta = np.sqrt(2) / 2
     
@@ -47,15 +57,6 @@ def main():
     print(f"theta = {theta:.6f}")
     print(f"p1 = {p1}, p2 = {p2}")
     print(f"BnTs = {BnTs}, Nsps = {Nsps}, Kp = {Kp}, zeta = {zeta:.6f}\n")
-    
-    # Согласованный фильтр
-    h = np.ones(Nsps)
-    conv_real = np.convolve(real, h, mode='same')
-    conv_imag = np.convolve(imag, h, mode='same')
-    
-    # Нормировка
-    conv_real = conv_real / np.max(np.abs(conv_real))
-    conv_imag = conv_imag / np.max(np.abs(conv_imag))
     
     # Анализ S-кривой
     print("Анализ зависимости TED от offset:")
@@ -130,6 +131,11 @@ def main():
         plt.ylabel('Ошибка TED')
         plt.title('Ошибка TED во времени')
         plt.show()
+
+    plt.figure(figsize=(8, 8))
+    plt.scatter(conv_real , conv_imag, alpha=0.5, s=5)
+    plt.title(f'Constellation BPSK after ted')
+    plt.show()
 
 if __name__ == '__main__':
     main()

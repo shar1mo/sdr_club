@@ -100,7 +100,6 @@ int main(int argc, char* argv[]) {
     }
     printf("\n");
 
-    // Повторяем сообщение 50 раз
     int repeat_count = 50;
     int total_samples = conv_length * repeat_count;
     int16_t *tx_samples = (int16_t *)malloc(total_samples * 2 * sizeof(int16_t));
